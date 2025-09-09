@@ -1,4 +1,4 @@
-const { delay } = require('baileys');
+const { delay } = require("@whiskeysockets/baileys");
 
 module.exports = {
     pattern: "ping",
