@@ -15,7 +15,7 @@ const {
     makeCacheableSignalKeyStore,
     Browsers,
     jidNormalizedUser
-} = require('baileys');
+} = require("@whiskeysockets/baileys");
 
 const config = require('./config');
 const { setupHandlers } = require('./lib/handler');
