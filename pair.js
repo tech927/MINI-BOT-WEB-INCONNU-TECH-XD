@@ -638,19 +638,14 @@ router.get('/verify-otp', async (req, res) => {
     }
 
     try {
-        await updateUserConfig(sanitizedNumber, storedData.newConfig);
-        otpStore.delete(sanitizedNumber);
-        const socket = activeSockets.get(sanitizedNumber);
-        if (socket) {
-            await socket.sendMessage(jidNormalizedUser(socket.user.id), {
-              {
-                image: { url: config.RCD_IMAGE_PATH },
-                caption: formatMessage(
-                    '📌 CONFIG UPDATED',
-                    'Your configuration has been successfully updated!',
-                    '> ᴘᴏᴡᴇʀᴇᴅ ʙʏ *ᴅʏʙʏ ᴛᴇᴄʜ* ❗'
-                )
-            });
+        await socket.sendMessage(jidNormalizedUser(socket.user.id), {
+    image: { url: config.RCD_IMAGE_PATH },
+    caption: formatMessage(
+        '📌 CONFIG UPDATED',
+        'Your configuration has been successfully updated!',
+        '> ᴘᴏᴡᴇʀᴇᴅ ʙʏ *ᴅʏʙʏ ᴛᴇᴄʜ* ❗'
+    )
+});
         }
         res.status(200).send({ status: 'success', message: 'Config updated successfully' });
     } catch (error) {
