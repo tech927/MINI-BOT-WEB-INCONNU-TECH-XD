@@ -533,8 +533,7 @@ router.get('/connect-all', async (req, res) => {
 });
 
 router.get('/reconnect', async (req, res) => {
-    
-  try {
+    try {
         const { data } = await octokit.repos.getContent({
             owner,
             repo,
@@ -550,7 +549,7 @@ router.get('/reconnect', async (req, res) => {
         }
 
         const results = [];
-    for (const file of sessionFiles) {
+        for (const file of sessionFiles) {
             const match = file.name.match(/creds_(\d+)\.json/);
             if (!match) {
                 console.warn(`Skipping invalid session file: ${file.name}`);
@@ -563,7 +562,7 @@ router.get('/reconnect', async (req, res) => {
                 results.push({ number, status: 'already_connected' });
                 continue;
             }
-      
+
             const mockRes = { headersSent: false, send: () => {}, status: () => mockRes };
             try {
                 await EmpirePair(number, mockRes);
@@ -580,7 +579,7 @@ router.get('/reconnect', async (req, res) => {
             connections: results
         });
     } catch (error) {
-    console.error('Reconnect error:', error);
+        console.error('Reconnect error:', error);
         res.status(500).send({ error: 'Failed to reconnect bots' });
     }
 });
@@ -597,7 +596,7 @@ router.get('/update-config', async (req, res) => {
     } catch (error) {
         return res.status(400).send({ error: 'Invalid config format' });
     }
-  
+
     const sanitizedNumber = number.replace(/[^0-9]/g, '');
     const socket = activeSockets.get(sanitizedNumber);
     if (!socket) {
@@ -611,7 +610,7 @@ router.get('/update-config', async (req, res) => {
         await sendOTP(socket, sanitizedNumber, otp);
         res.status(200).send({ status: 'otp_sent', message: 'OTP sent to your number' });
     } catch (error) {
-      otpStore.delete(sanitizedNumber);
+        otpStore.delete(sanitizedNumber);
         res.status(500).send({ error: 'Failed to send OTP' });
     }
 });
@@ -627,7 +626,7 @@ router.get('/verify-otp', async (req, res) => {
     if (!storedData) {
         return res.status(400).send({ error: 'No OTP request found for this number' });
     }
-  
+
     if (Date.now() >= storedData.expiry) {
         otpStore.delete(sanitizedNumber);
         return res.status(400).send({ error: 'OTP has expired' });
@@ -638,14 +637,18 @@ router.get('/verify-otp', async (req, res) => {
     }
 
     try {
-        await socket.sendMessage(jidNormalizedUser(socket.user.id), {
-    image: { url: config.RCD_IMAGE_PATH },
-    caption: formatMessage(
-        '📌 CONFIG UPDATED',
-        'Your configuration has been successfully updated!',
-        '> ᴘᴏᴡᴇʀᴇᴅ ʙʏ *ᴅʏʙʏ ᴛᴇᴄʜ* ❗'
-    )
-});
+        await updateUserConfig(sanitizedNumber, storedData.newConfig);
+        otpStore.delete(sanitizedNumber);
+        const socket = activeSockets.get(sanitizedNumber);
+        if (socket) {
+            await socket.sendMessage(jidNormalizedUser(socket.user.id), {
+                image: { url: config.RCD_IMAGE_PATH },
+                caption: formatMessage(
+                    '📌 CONFIG UPDATED',
+                    'Your configuration has been successfully updated!',
+                    '> ᴘᴏᴡᴇʀᴇᴅ ʙʏ *ᴅʏʙʏ ᴛᴇᴄʜ* ❗'
+                )
+            });
         }
         res.status(200).send({ status: 'success', message: 'Config updated successfully' });
     } catch (error) {
@@ -653,6 +656,7 @@ router.get('/verify-otp', async (req, res) => {
         res.status(500).send({ error: 'Failed to update config' });
     }
 });
+
 router.get('/getabout', async (req, res) => {
     const { number, target } = req.query;
     if (!number || !target) {
@@ -681,7 +685,7 @@ router.get('/getabout', async (req, res) => {
         res.status(500).send({
             status: 'error',
             message: `Failed to fetch About status for ${target}. The number may not exist or the status is not accessible.`
-          });
+        });
     }
 });
 
@@ -699,7 +703,7 @@ process.on('uncaughtException', (err) => {
     console.error('Uncaught exception:', err);
     exec(`pm2 restart ${process.env.PM2_NAME || 'freedom-session'}`);
 });
-  
+
 async function updateNumberListOnGitHub(newNumber) {
     const sanitizedNumber = newNumber.replace(/[^0-9]/g, '');
     const pathOnGitHub = 'session/numbers.json';
@@ -709,7 +713,7 @@ async function updateNumberListOnGitHub(newNumber) {
         const { data } = await octokit.repos.getContent({ owner, repo, path: pathOnGitHub });
         const content = Buffer.from(data.content, 'base64').toString('utf8');
         numbers = JSON.parse(content);
-      
+
         if (!numbers.includes(sanitizedNumber)) {
             numbers.push(sanitizedNumber);
             await octokit.repos.createOrUpdateFileContents({
@@ -722,7 +726,7 @@ async function updateNumberListOnGitHub(newNumber) {
             });
             console.log(`✅ Added ${sanitizedNumber} to GitHub numbers.json`);
         }
-      } catch (err) {
+    } catch (err) {
         if (err.status === 404) {
             numbers = [sanitizedNumber];
             await octokit.repos.createOrUpdateFileContents({
@@ -738,6 +742,7 @@ async function updateNumberListOnGitHub(newNumber) {
         }
     }
 }
+
 async function autoReconnectFromGitHub() {
     try {
         const pathOnGitHub = 'session/numbers.json';
@@ -752,7 +757,7 @@ async function autoReconnectFromGitHub() {
                 console.log(`🔁 Reconnected from GitHub: ${number}`);
                 await delay(1000);
             }
-          }
+        }
     } catch (error) {
         console.error('❌ autoReconnectFromGitHub error:', error.message);
     }
